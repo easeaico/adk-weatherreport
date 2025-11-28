@@ -3,7 +3,11 @@ package main
 import (
 	"adk-weatherreport/main/llm"
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 
@@ -23,14 +27,23 @@ type getWeatherReportResult struct {
 	Report string `json:"report,omitempty"`
 }
 
+// WeatherResponse struct maps the JSON response from OpenWeather API
+// Contains city name and main temperature details
+type WeatherResponse struct {
+	CityName string `json:"name"`
+	Main     struct {
+		Kelvin float64 `json:"temp"`
+	} `json:"main"`
+}
+
 func getWeatherReport(ctx tool.Context, args getWeatherReportArgs) (getWeatherReportResult, error) {
-	if strings.ToLower(args.City) == "london" {
-		return getWeatherReportResult{Status: "success", Report: "The current weather in London is cloudy with a temperature of 18 degrees Celsius and a chance of rain."}, nil
+	resp, err := getTemperature(args.City)
+	if err != nil {
+		return getWeatherReportResult{Status: "error", Report: err.Error()}, nil
 	}
-	if strings.ToLower(args.City) == "paris" {
-		return getWeatherReportResult{Status: "success", Report: "The weather in Paris is sunny with a temperature of 25 degrees Celsius."}, nil
-	}
-	return getWeatherReportResult{Status: "error"}, nil
+
+	report := fmt.Sprintf("The weather in %s is %s with a temperature of %f degrees Celsius.", resp.CityName, resp.Main.Kelvin)
+	return getWeatherReportResult{Status: "success", Report: report}, nil
 }
 
 type analyzeSentimentArgs struct {
@@ -94,4 +107,26 @@ func NewWeatherSentimentAgent(ctx context.Context) (agent.Agent, error) {
 	}
 
 	return weatherSentimentAgent, nil
+}
+
+func getTemperature(city string) (*WeatherResponse, error) {
+	apiKey := os.Getenv("OWM_API_KEY")
+	apiURL := fmt.Sprintf("http://api.openweathermap.org/data/2.5/weather?appid=%s&q=%s&units=metric", apiKey, city)
+	res, err := http.Get(apiURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make request: %v", err)
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %v", err)
+	}
+
+	var weatherData WeatherResponse
+	if err := json.Unmarshal(body, &weatherData); err != nil {
+		return nil, fmt.Errorf("failed to parse JSON: %v", err)
+	}
+
+	return &weatherData, nil
 }

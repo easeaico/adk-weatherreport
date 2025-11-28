@@ -7,7 +7,6 @@ import (
 	"os"
 	"syscall"
 
-	owm "github.com/briandowns/openweathermap"
 	"github.com/maxence-charriere/go-app/v10/pkg/cli"
 	"google.golang.org/adk/agent"
 	"google.golang.org/adk/cmd/launcher"
@@ -22,17 +21,11 @@ func main() {
 	)
 	defer cancel()
 
-	apiKey := os.Getenv("OWM_API_KEY")
-	w, err := owm.NewCurrent("K", "EN", apiKey)
+	resp, err := getTemperature("Hangzhou")
 	if err != nil {
 		log.Fatalln(err)
 	}
-
-	err = w.CurrentByName("Phoenix,AZ")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	fmt.Println(w)
+	fmt.Println(resp)
 
 	weatherAgent, err := NewWeatherSentimentAgent(ctx)
 	if err != nil {
