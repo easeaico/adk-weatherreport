@@ -1,4 +1,4 @@
-package llm
+package models
 
 import (
 	"encoding/json"

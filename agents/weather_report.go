@@ -1,7 +1,7 @@
-package main
+package agents
 
 import (
-	"adk-weatherreport/main/llm"
+	"adk-weatherreport/main/models"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 
 	"google.golang.org/adk/agent"
 	"google.golang.org/adk/agent/llmagent"
@@ -56,27 +55,8 @@ func getWeatherReport(ctx tool.Context, args getWeatherReportArgs) (getWeatherRe
 	return getWeatherReportResult{Status: "success", Report: report}, nil
 }
 
-type analyzeSentimentArgs struct {
-	Text string `json:"text" jsonschema:"The text to analyze for sentiment."`
-}
-
-type analyzeSentimentResult struct {
-	Sentiment  string  `json:"sentiment"`
-	Confidence float64 `json:"confidence"`
-}
-
-func analyzeSentiment(ctx tool.Context, args analyzeSentimentArgs) (analyzeSentimentResult, error) {
-	if strings.Contains(strings.ToLower(args.Text), "good") || strings.Contains(strings.ToLower(args.Text), "sunny") {
-		return analyzeSentimentResult{Sentiment: "positive", Confidence: 0.8}, nil
-	}
-	if strings.Contains(strings.ToLower(args.Text), "rain") || strings.Contains(strings.ToLower(args.Text), "bad") {
-		return analyzeSentimentResult{Sentiment: "negative", Confidence: 0.7}, nil
-	}
-	return analyzeSentimentResult{Sentiment: "neutral", Confidence: 0.6}, nil
-}
-
-func NewWeatherSentimentAgent(ctx context.Context) (agent.Agent, error) {
-	model, err := llm.NewGrokModel(ctx, "grok-4-1-fast", &genai.ClientConfig{
+func NewWeatherReportAgent(ctx context.Context) (agent.Agent, error) {
+	model, err := models.NewGrokModel(ctx, "grok-4-1-fast", &genai.ClientConfig{
 		APIKey: os.Getenv("XAI_API_KEY"),
 	})
 	if err != nil {
@@ -95,28 +75,17 @@ func NewWeatherSentimentAgent(ctx context.Context) (agent.Agent, error) {
 		log.Fatal(err)
 	}
 
-	sentimentTool, err := functiontool.New(
-		functiontool.Config{
-			Name:        "analyze_sentiment",
-			Description: "Analyzes the sentiment of the given text.",
-		},
-		analyzeSentiment,
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	weatherSentimentAgent, err := llmagent.New(llmagent.Config{
+	weatherReportAgent, err := llmagent.New(llmagent.Config{
 		Name:        "weather_sentiment_agent",
 		Model:       model,
 		Instruction: "You are a helpful assistant that provides weather information and analyzes the sentiment of user feedback. **If the user asks about the weather in a specific city, use the 'get_weather_report' tool to retrieve the weather details.** **If the 'get_weather_report' tool returns a 'success' status, provide the weather report to the user.** **If the 'get_weather_report' tool returns an 'error' status, inform the user that the weather information for the specified city is not available and ask if they have another city in mind.** **After providing a weather report, if the user gives feedback on the weather (e.g., 'That's good' or 'I don't like rain'), use the 'analyze_sentiment' tool to understand their sentiment.** Then, briefly acknowledge their sentiment. You can handle these tasks sequentially if needed.",
-		Tools:       []tool.Tool{weatherTool, sentimentTool},
+		Tools:       []tool.Tool{weatherTool},
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return weatherSentimentAgent, nil
+	return weatherReportAgent, nil
 }
 
 func getTemperature(city string) (*WeatherResponse, error) {
