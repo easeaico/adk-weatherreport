@@ -1,5 +1,5 @@
-// Package llm implements OpenAI API adapter for x.ai models.
-package llm
+// Package models implements OpenAI API adapter for x.ai models.
+package models
 
 import (
 	"context"
