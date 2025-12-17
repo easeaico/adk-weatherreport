@@ -2,7 +2,9 @@
 
 一个基于 Google ADK (Agent Development Kit) 框架开发的智能天气报告代理，能够查询城市天气信息并提供智能对话服务。
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/Nw8njfjmxZM?si=8YCMKyQWlgswi2d2" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+点击下方缩略图即可在 YouTube 上观看演示讲解：
+[![YouTube 演示讲解视频](https://img.youtube.com/vi/Nw8njfjmxZM/hqdefault.jpg)](https://www.youtube.com/watch?v=Nw8njfjmxZM)
 
 ## 项目简介
 
